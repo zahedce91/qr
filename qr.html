@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QR Code Generator</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    #qr-container {
+      position: relative;
+      display: inline-block;
+      padding: 15px;
+      border-radius: 10px;
+
+    }
+
+    #qr-image {
+      position: absolute;
+      cursor: move;
+      object-fit: contain;
+      display: none;
+    }
+
+    #top-text,
+    #bottom-text {
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    #top-text {
+      margin-bottom: 10px;
+    }
+
+    /* Layouts */
+    /* Classic Centered Layout */
+    .template-classic-centered #qrcode {
+      margin: 0 auto;
+    }
+
+    .template-classic-centered #qr-image {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .template-classic-centered #top-text,
+    .template-classic-centered #bottom-text {
+      position: relative;
+      text-align: center;
+    }
+
+    /* Side-by-Side with Text Left */
+    .template-side-left {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .template-side-left #qrcode,
+    .template-side-left #qr-image {
+      margin-left: 20px;
+    }
+
+    .template-side-left #qr-image {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .template-side-left #top-text,
+    .template-side-left #bottom-text {
+      left: 10px;
+      text-align: left;
+    }
+
+    /* Badge Style */
+    .template-badge-style #qr-wrapper {
+      border-radius: 50%;
+      padding: 30px;
+      border: 4px solid #007bff;
+      width: 240px;
+      height: 240px;
+      margin: 0 auto;
+    }
+
+    .template-badge-style #qr-image {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Modern Vertical Card */
+    .template-modern-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .template-modern-card #top-text,
+    .template-modern-card #bottom-text {
+      text-align: center;
+      padding: 5px 0;
+    }
+
+    .template-modern-card #top-text {
+      border-bottom: 1px solid #ddd;
+    }
+
+    .template-modern-card #bottom-text {
+      border-top: 1px solid #ddd;
+    }
+
+    .template-modern-card #qrcode {
+      margin: 10px auto;
+    }
+
+    .template-modern-card #qr-image {
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  </style>
+</head>
+
+<body class="p-4" style="background-color: var(--bs-gray-200)">
+  <div class="container">
+    <h2>QR Code Generator</h2>
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <label class="form-label">QR Type</label>
+        <select id="qr-type" class="form-select">
+          <option value="text">Text</option>
+          <option value="email">Email</option>
+          <option value="url">URL</option>
+          <option value="phone">Phone</option>
+          <option value="sms">SMS</option>
+          <option value="vcard">vCard</option>
+          <option value="wifi">Wi-Fi</option>
+        </select>
+      </div>
+
+      <div class="col-md-8" id="dynamic-inputs"></div>
+
+      <div class="col-md-4">
+        <label class="form-label">QR Code Foreground Color</label>
+        <input type="color" id="qr-foreground" class="form-control form-control-color" value="#000000">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">QR Code Background Color</label>
+        <input type="color" id="qr-background" class="form-control form-control-color" value="#ffffff">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Upload Logo</label>
+        <input type="file" id="image-upload" class="form-control">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">QR Code Size (px)</label>
+        <input type="range" min="100" max="500" value="250" id="qr-size" class="form-range">
+        <div>Selected size: <span id="qr-size-output">250</span>px</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Logo Size (px)</label>
+        <input type="range" min="20" max="150" value="60" id="logo-size" class="form-range">
+        <div>Selected size: <span id="logo-size-output">60</span>px</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Error Correction Level</label>
+        <select id="qr-error-level" class="form-select">
+          <option value="L">L (Low - 7%)</option>
+          <option value="M" selected>M (Medium - 15%)</option>
+          <option value="Q">Q (Quartile - 25%)</option>
+          <option value="H">H (High - 30%)</option>
+        </select>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Top Text</label>
+        <input type="text" id="qr-top-text" class="form-control" placeholder="Top Text">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Top Text Color</label>
+        <input type="color" id="top-text-color" class="form-control form-control-color" value="#000000">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Top Text Size (px)</label>
+        <input type="number" id="top-text-size" class="form-control" min="10" value="16">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Bottom Text</label>
+        <input type="text" id="qr-bottom-text" class="form-control" placeholder="Bottom Text">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bottom Text Color</label>
+        <input type="color" id="bottom-text-color" class="form-control form-control-color" value="#000000">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Bottom Text Size (px)</label>
+        <input type="number" id="bottom-text-size" class="form-control" min="10" value="16">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">Layout Template</label>
+        <div id="layout-options" class="d-flex flex-wrap gap-3">
+
+          <!-- Classic Centered Layout -->
+          <div class="layout-option border p-2 text-center" data-layout="classic-centered">
+            <img src="data:image/svg+xml;utf8,
+            <svg xmlns='http://www.w3.org/2000/svg' width='80' height='100' viewBox='0 0 80 100'>
+              <rect width='80' height='100' fill='%23eee'/>
+              <rect x='10' y='10' width='60' height='6' fill='%23000'/>
+              <rect x='15' y='30' width='50' height='50' fill='%23ccc'/>
+              <circle cx='40' cy='55' r='10' fill='%23007bff'/>
+              <rect x='10' y='90' width='60' height='6' fill='%23000'/>
+            </svg>" width="50">
+            <br><small>Classic Centered</small>
+          </div>
+
+          <!-- Side-by-Side with Text Left -->
+          <div class="layout-option border p-2 text-center" data-layout="side-left">
+            <img src="data:image/svg+xml;utf8,
+            <svg xmlns='http://www.w3.org/2000/svg' width='100' height='80' viewBox='0 0 100 80'>
+              <rect width='100' height='80' fill='%23eee'/>
+              <rect x='5' y='5' width='30' height='6' fill='%23000'/>
+              <rect x='5' y='70' width='30' height='6' fill='%23000'/>
+              <rect x='40' y='15' width='50' height='50' fill='%23ccc'/>
+              <circle cx='65' cy='40' r='10' fill='%23007bff'/>
+            </svg>" width="50">
+            <br><small>Side-by-Side</small>
+          </div>
+
+          <!-- Badge Style -->
+          <div class="layout-option border p-2 text-center" data-layout="badge-style">
+            <img src="data:image/svg+xml;utf8,
+            <svg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'>
+              <circle cx='40' cy='40' r='39' fill='%23ccc' stroke='%23000' stroke-width='2'/>
+              <circle cx='40' cy='40' r='10' fill='%23007bff'/>
+            </svg>" width="50">
+            <br><small>Badge Style</small>
+          </div>
+
+          <!-- Modern Vertical Card -->
+          <div class="layout-option border p-2 text-center" data-layout="modern-card">
+            <img src="data:image/svg+xml;utf8,
+            <svg xmlns='http://www.w3.org/2000/svg' width='80' height='100' viewBox='0 0 80 100'>
+              <rect width='80' height='100' fill='%23f9f9f9'/>
+              <rect x='10' y='10' width='60' height='6' fill='%23000'/>
+              <line x1='10' y1='25' x2='70' y2='25' stroke='%23aaa' stroke-width='1'/>
+              <rect x='15' y='35' width='50' height='50' fill='%23ccc'/>
+              <circle cx='40' cy='60' r='10' fill='%23007bff'/>
+              <line x1='10' y1='90' x2='70' y2='90' stroke='%23aaa' stroke-width='1'/>
+              <rect x='10' y='94' width='60' height='6' fill='%23000'/>
+            </svg>" width="50">
+            <br><small>Vertical Card</small>
+          </div>
+
+        </div>
+        <input type="hidden" id="layout-template" value="center">
+      </div>
+
+
+
+
+
+      <div class="col-md-3">
+        <label class="form-label">Layout Background Color</label>
+        <input type="color" id="custom-bg-color" class="form-control form-control-color" value="#ffffff">
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label">Layout Outline Color</label>
+        <input type="color" id="custom-outline-color" class="form-control form-control-color" value="#ffffff">
+      </div>
+
+
+      <div class="col-12">
+        <button class="btn btn-primary" id="generate-btn">Generate QR</button>
+        <button class="btn btn-success" id="download-btn">Download QR</button>
+      </div>
+    </div>
+
+    <hr>
+    <div id="qr-result" class="text-center mt-4">
+      <div id="qr-wrapper" class="theme-light p-4 rounded d-inline-block">
+        <div id="qr-container" class="template-center">
+          <div id="top-text"></div>
+          <div id="qrcode"></div>
+          <img id="qr-image" src="" draggable="true">
+          <div id="bottom-text"></div>
+        </div>
+      </div>
+      <div id="error-message" class="text-danger mt-3"></div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+  <script>
+    let qr;
+    const makeDynamicFields = (type) => {
+      const $input = $('#dynamic-inputs');
+      let html = '';
+      if (type === 'wifi') {
+        html = `<label>SSID</label><input type="text" id="ssid" class="form-control">
+              <label>Password</label><input type="text" id="wifipass" class="form-control">
+              <label>Encryption</label>
+              <select id="encryption" class="form-select">
+                <option value="WPA">WPA/WPA2</option>
+                <option value="WEP">WEP</option>
+                <option value="">None</option></select>`;
+      } else if (type === 'vcard') {
+        html = `<label>Name</label><input type="text" id="vname" class="form-control">
+                <label>Title</label><input type="text" id="vtitle" class="form-control">
+                <label>Company</label><input type="text" id="vorg" class="form-control">
+                <label>Phone</label><input type="text" id="vphone" class="form-control">
+                <label>Email</label><input type="text" id="vemail" class="form-control">
+                <label>Website</label><input type="url" id="vwebsite" class="form-control">
+              `;
+      } else {
+        html = `<label>Content</label><input type="text" id="qr-data" class="form-control">`;
+      }
+      $input.html(html);
+    }
+
+    $('#qr-type').on('change', function () {
+      makeDynamicFields($(this).val());
+    });
+    $(document).ready(() => makeDynamicFields($('#qr-type').val()));
+
+    $('#generate-btn').on('click', function () {
+      const type = $('#qr-type').val();
+      let data = '';
+      $('#error-message').text('');
+
+      switch (type) {
+        case 'email': data = 'mailto:' + $('#qr-data').val(); break;
+        case 'url': data = $('#qr-data').val().startsWith('http') ? $('#qr-data').val() : 'https://' + $('#qr-data').val(); break;
+        case 'phone': data = 'tel:' + $('#qr-data').val(); break;
+        case 'sms': data = 'sms:' + $('#qr-data').val(); break;
+        case 'wifi':
+          data = `WIFI:T:${$('#encryption').val()};S:${$('#ssid').val()};P:${$('#wifipass').val()};;`; break;
+        case 'vcard':
+          data = `BEGIN:VCARD\nVERSION:3.0\nN:${$('#vname').val()}\nTITLE:${$('#vtitle').val()}\nORG:${$('#vorg').val()}\nTEL:${$('#vphone').val()}\nEMAIL:${$('#vemail').val()}\nURL:${$('#vwebsite').val()}\nEND:VCARD`; break;
+        default: data = $('#qr-data').val();
+      }
+
+      const qrSize = parseInt($('#qr-size').val());
+      const errorLevel = $('#qr-error-level').val();
+      $('#qrcode').empty();
+
+      try {
+        qr = new QRCode(document.getElementById("qrcode"), {
+          text: data,
+          width: qrSize,
+          height: qrSize,
+          colorDark: $('#qr-foreground').val(),
+          colorLight: $('#qr-background').val(),
+          correctLevel: QRCode.CorrectLevel[errorLevel]
+        });
+      } catch (e) {
+        $('#error-message').text('Error generating QR: ' + e.message);
+        return;
+      }
+
+      const topText = $('#qr-top-text').val();
+      $('#top-text').text(topText).css({
+        color: $('#top-text-color').val(),
+        fontSize: $('#top-text-size').val() + 'px'
+      });
+
+      const bottomText = $('#qr-bottom-text').val();
+      $('#bottom-text').text(bottomText).css({
+        color: $('#bottom-text-color').val(),
+        fontSize: $('#bottom-text-size').val() + 'px'
+      });
+
+      const file = $('#image-upload')[0].files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const logoSize = $('#logo-size').val();
+          $('#qr-image').attr('src', e.target.result).css({ display: 'block', width: logoSize + 'px', height: logoSize + 'px' });
+        }
+        reader.readAsDataURL(file);
+      } else {
+        $('#qr-image').hide();
+      }
+
+      // Apply layout + theme classes
+      $('#qr-container')
+        .removeClass()
+        .addClass('template-' + $('#layout-template').val());
+      $('#qr-wrapper')
+        .removeClass()
+        .addClass('p-4 rounded d-inline-block')
+        .css({
+          backgroundColor: $('#custom-bg-color').val(),
+          border: '5px solid ' + $('#custom-outline-color').val()
+        });
+
+
+    });
+
+    // 🖱️ Layout selection logic > active inactive
+    $('#layout-options .layout-option').on('click', function () {
+      $('#layout-options .layout-option').removeClass('border-primary border-2');
+      $(this).addClass('border-primary border-2');
+
+      const selectedLayout = $(this).data('layout');
+      $('#layout-template').val(selectedLayout);
+
+    });
+
+    $('#download-btn').on('click', function () {
+      html2canvas(document.getElementById('qr-container')).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'qr_code.png';
+        link.href = canvas.toDataURL();
+        link.click();
+      });
+    });
+
+    $('#qr-size').on('input', function () {
+      $('#qr-size-output').text($(this).val());
+    });
+    $('#logo-size').on('input', function () {
+      $('#logo-size-output').text($(this).val());
+      $('#qr-image').css({ width: $(this).val() + 'px', height: $(this).val() + 'px' });
+    });
+
+    // Drag logo
+    let dragging = false;
+    const img = document.getElementById('qr-image');
+    img.addEventListener('mousedown', e => { dragging = true; });
+    document.addEventListener('mouseup', () => { dragging = false; });
+    document.addEventListener('mousemove', function (e) {
+      if (!dragging) return;
+      const container = document.getElementById('qr-container');
+      const rect = container.getBoundingClientRect();
+      const x = e.clientX - rect.left - img.offsetWidth / 2;
+      const y = e.clientY - rect.top - img.offsetHeight / 2;
+      img.style.left = x + 'px';
+      img.style.top = y + 'px';
+    });
+  </script>
+</body>
+
+</html>
